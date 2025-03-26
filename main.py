@@ -14,7 +14,7 @@ if __name__ == "__main__":
     )
 
     # Initialize Hand Tracker
-    tracker = HandTracker(source=0, unknown_timeout=0.7)
+    tracker = HandTracker(source=4)
 
     # Start Video Streamer (Configurable Host & Port)
     video_streamer = VideoStreamer(host="0.0.0.0", port=5000)

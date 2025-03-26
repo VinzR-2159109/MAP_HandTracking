@@ -9,7 +9,7 @@ from DataClasses.Hands import Hands
 from DataClasses.Position import Position
 
 class HandTracker:
-    def __init__(self, source=0, max_num_hands=2, unknown_timeout=1.0):
+    def __init__(self, source=0, max_num_hands=2, unknown_timeout=5.0):
         self.mp_hands = mp.solutions.hands
         self.mp_drawing = mp.solutions.drawing_utils
         self.hands = self.mp_hands.Hands(
@@ -50,8 +50,8 @@ class HandTracker:
                 )
 
                 cv2.circle(frame, (avg_x, avg_y), 5, (0, 255, 0), -1)
-                cv2.putText(frame, f"{hand_label} ({avg_x},{avg_y})", (avg_x, avg_y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                # cv2.putText(frame, f"{hand_label} ({avg_x},{avg_y})", (avg_x, avg_y - 10),
+                #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
                 print(f"Debug: {hand_label} ({avg_x},{avg_y})")
 
                 self.last_detected_time[hand_label] = time.time()
