@@ -1,3 +1,5 @@
+# https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
+
 from mqtt_handler import MQTTHandler
 from hand_tracker import HandTracker
 from video_streamer import VideoStreamer
@@ -32,7 +34,7 @@ if __name__ == "__main__":
 
         if hand_positions and tracker.has_position_changed(hand_positions):
             data_to_send = hand_positions.to_json()
-            mqtt_handler.publish(data_to_send, topic="sensor/hands/position")
+            mqtt_handler.publish(data_to_send, topic="Input/HandsPosition")
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

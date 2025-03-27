@@ -8,6 +8,14 @@ from DataClasses.Hand import Hand
 from DataClasses.Hands import Hands
 from DataClasses.Position import Position
 
+LANDMARK_NAMES = [
+    "WRIST", "THUMB_CMC", "THUMB_MCP", "THUMB_IP", "THUMB_TIP",
+    "INDEX_FINGER_MCP", "INDEX_FINGER_PIP", "INDEX_FINGER_DIP", "INDEX_FINGER_TIP",
+    "MIDDLE_FINGER_MCP", "MIDDLE_FINGER_PIP", "MIDDLE_FINGER_DIP", "MIDDLE_FINGER_TIP",
+    "RING_FINGER_MCP", "RING_FINGER_PIP", "RING_FINGER_DIP", "RING_FINGER_TIP",
+    "PINKY_MCP", "PINKY_PIP", "PINKY_DIP", "PINKY_TIP"
+]
+
 class HandTracker:
     def __init__(self, source=0, max_num_hands=2, unknown_timeout=5.0):
         self.mp_hands = mp.solutions.hands
@@ -42,16 +50,21 @@ class HandTracker:
                 )
 
                 h, w, _ = frame.shape
-                coords = np.array([(int(lm.x * w), int(lm.y * h)) for lm in hand_landmarks.landmark])
+
+                coords = [(int(lm.x * w), int(lm.y * h)) for lm in hand_landmarks.landmark]
+                positions = [Position(x=x, y=y, index=LANDMARK_NAMES[i]) for i, (x, y) in enumerate(coords)]
                 avg_x, avg_y = map(int, np.mean(coords, axis=0))
 
                 detected_hands[hand_label] = Hand(
-                    label=hand_label, position=Position(x=avg_x, y=avg_y), status="detected"
+                    label=hand_label,
+                    position=Position(x=avg_x, y=avg_y),
+                    status="detected",
+                    landmarks=positions
                 )
-
+             
                 cv2.circle(frame, (avg_x, avg_y), 5, (0, 255, 0), -1)
-                # cv2.putText(frame, f"{hand_label} ({avg_x},{avg_y})", (avg_x, avg_y - 10),
-                #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                cv2.putText(frame, f"{hand_label} ({avg_x},{avg_y})", (avg_x, avg_y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
                 print(f"Debug: {hand_label} ({avg_x},{avg_y})")
 
                 self.last_detected_time[hand_label] = time.time()
@@ -60,12 +73,12 @@ class HandTracker:
         for hand in ["Left", "Right"]:
             if detected_hands[hand] is None:
                 if not self.sent_unknown[hand] and (time.time() - self.last_detected_time[hand] > self.unknown_timeout):
-                    detected_hands[hand] = Hand(label=hand, position=Position(x=-1, y=-1), status="unknown")
+                    detected_hands[hand] = Hand(label=hand, position=Position(x=-1, y=-1), status="unknown", landmarks=[])
                     self.sent_unknown[hand] = True
 
         hands_list = [
-            detected_hands["Left"] if detected_hands["Left"] else Hand(label="Left", position=Position(x=-1, y=-1), status="unknown"),
-            detected_hands["Right"] if detected_hands["Right"] else Hand(label="Right", position=Position(x=-1, y=-1), status="unknown"),
+            detected_hands["Left"] if detected_hands["Left"] else Hand(label="Left", position=Position(x=-1, y=-1), status="unknown", landmarks=[]),
+            detected_hands["Right"] if detected_hands["Right"] else Hand(label="Right", position=Position(x=-1, y=-1), status="unknown", landmarks=[]),
         ]
 
         return frame, Hands(detected_hands=hands_list)
