@@ -1,13 +1,20 @@
 import paho.mqtt.client as mqtt
 import json
 import threading
+import time
 
 class MQTTHandler:
     """Handles MQTT connection"""
     def __init__(self, broker, port, username, password, sub_topic):
-        
-        self.client = mqtt.Client()
+        self.broker = broker
+        self.port = port
+        self.username = username
+        self.password = password
+        self.sub_topic = sub_topic
+        self.connected = False
+        self.should_reconnect = True
 
+        self.client = mqtt.Client()
         self.client.tls_set()
         self.client.username_pw_set(username, password)
 
@@ -15,20 +22,23 @@ class MQTTHandler:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
-        self.broker = broker
-        self.port = port
-        self.sub_topic = sub_topic
-        self.connected = False
+        self._connect()
 
+        self.thread = threading.Thread(target=self._start_loop, daemon=True)
+        self.thread.start()
+
+    def _connect(self):
         try:
-            self.client.connect(broker, port, keepalive=60)
-            self.connected = True
+            self.client.connect(self.broker, self.port, keepalive=60)
+
         except Exception as e:
-            print(f"MQTT Connection Error: {e}")
+            print(f"MQTT Initial Connection Error: {e}")
             self.connected = False
 
-        self.thread = threading.Thread(target=self.client.loop_forever, daemon=True)
-        self.thread.start()
+    def _start_loop(self):
+        while True:
+            self.client.loop(timeout=1.0)
+            time.sleep(0.1)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -39,8 +49,17 @@ class MQTTHandler:
             print(f"Failed to connect, return code {rc}")
 
     def on_disconnect(self, client, userdata, rc):
-        print("Disconnected from MQTT broker.")
         self.connected = False
+        print("Disconnected from MQTT broker.")
+
+        if self.should_reconnect:
+            print("Attempting to reconnect...")
+            while not self.connected:
+                try:
+                    self.client.reconnect()
+                except Exception as e:
+                    print(f"Reconnection failed: {e}")
+                    time.sleep(2)
 
     def on_message(self, client, userdata, message):
         try:
@@ -52,7 +71,7 @@ class MQTTHandler:
     def publish(self, message, topic="sensor/hands/position"):
         if self.connected:
             try:
-                self.client.publish(topic, message)  # No need to use json.dumps again
+                self.client.publish(topic, message)
                 print(f"Published to {topic}: {message}")
             except Exception as e:
                 print(f"Error publishing message: {e}")
