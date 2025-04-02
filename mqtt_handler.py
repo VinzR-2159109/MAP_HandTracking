@@ -1,16 +1,16 @@
 import paho.mqtt.client as mqtt
 import json
-import threading
 import time
 
 class MQTTHandler:
-    """Handles MQTT connection"""
-    def __init__(self, broker, port, username, password, sub_topic):
+    def __init__(self, broker, port, username, password, sub_topic, message_callback=None):
         self.broker = broker
         self.port = port
         self.username = username
         self.password = password
         self.sub_topic = sub_topic
+        self.message_callback = message_callback
+
         self.connected = False
         self.should_reconnect = True
 
@@ -21,24 +21,16 @@ class MQTTHandler:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
-
+        
         self._connect()
-
-        self.thread = threading.Thread(target=self._start_loop, daemon=True)
-        self.thread.start()
+        self.client.loop_start()
 
     def _connect(self):
         try:
             self.client.connect(self.broker, self.port, keepalive=60)
-
         except Exception as e:
             print(f"MQTT Initial Connection Error: {e}")
             self.connected = False
-
-    def _start_loop(self):
-        while True:
-            self.client.loop(timeout=1.0)
-            time.sleep(0.1)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -51,12 +43,12 @@ class MQTTHandler:
     def on_disconnect(self, client, userdata, rc):
         self.connected = False
         print("Disconnected from MQTT broker.")
-
         if self.should_reconnect:
-            print("Attempting to reconnect...")
             while not self.connected:
                 try:
+                    print("Attempting to reconnect...")
                     self.client.reconnect()
+                    time.sleep(2)
                 except Exception as e:
                     print(f"Reconnection failed: {e}")
                     time.sleep(2)
@@ -65,6 +57,11 @@ class MQTTHandler:
         try:
             payload = json.loads(message.payload.decode("utf-8"))
             print(f"Debug: Received message on {message.topic}: {payload}")
+            
+            # Call external callback if provided
+            if self.message_callback:
+                self.message_callback(message.topic, payload)
+
         except json.JSONDecodeError:
             print(f"Invalid JSON message received: {message.payload}")
 
@@ -77,3 +74,10 @@ class MQTTHandler:
                 print(f"Error publishing message: {e}")
         else:
             print("MQTT is not connected. Message not sent.")
+    
+    def subscribe(self, topic):
+        if self.connected:
+            self.client.subscribe(topic)
+            print(f"Subscribed to topic: {topic}")
+        else:
+            print(f"Cannot subscribe to {topic}: MQTT is not connected yet.")
