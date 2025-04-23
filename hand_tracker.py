@@ -65,7 +65,7 @@ class HandTracker:
                 cv2.circle(frame, (avg_x, avg_y), 5, (0, 255, 0), -1)
                 cv2.putText(frame, f"{hand_label} ({avg_x},{avg_y})", (avg_x, avg_y - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
-                print(f"Debug: {hand_label} ({avg_x},{avg_y})")
+                # print(f"Debug: {hand_label} ({avg_x},{avg_y})")
 
                 self.last_detected_time[hand_label] = time.time()
                 self.sent_unknown[hand_label] = False

@@ -4,7 +4,7 @@ from mqtt_handler import MQTTHandler
 from hand_tracker import HandTracker
 from video_streamer import VideoStreamer
 from websocket_client import WebSocketClient
-import cv2, json
+import cv2
 
 def on_mqtt_message(topic, msg):
     global ws_client
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     ws_client = WebSocketClient()
 
 
-    tracker = HandTracker(source=4)
+    tracker = HandTracker(source=0)
     video_streamer = VideoStreamer(host="0.0.0.0", port=5000)
     video_streamer.start()
 

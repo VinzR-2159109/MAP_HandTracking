@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import threading
 import json
 import time
 
@@ -44,14 +45,18 @@ class MQTTHandler:
         self.connected = False
         print("Disconnected from MQTT broker.")
         if self.should_reconnect:
-            while not self.connected:
-                try:
-                    print("Attempting to reconnect...")
-                    self.client.reconnect()
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"Reconnection failed: {e}")
-                    time.sleep(2)
+            threading.Thread(target=self._reconnect_loop, daemon=True).start()
+
+    def _reconnect_loop(self):
+        while not self.connected and self.should_reconnect:
+            try:
+                print("Attempting to reconnect...")
+                self.client.reconnect()
+                time.sleep(2)
+            except Exception as e:
+                print(f"Reconnection failed: {e}")
+                time.sleep(2)
+
 
     def on_message(self, client, userdata, message):
         try:
