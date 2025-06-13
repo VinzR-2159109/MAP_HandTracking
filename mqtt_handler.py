@@ -23,7 +23,7 @@ class MQTTHandler:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         
-        self._connect()
+        self._connect_blocking()
         self.client.loop_start()
 
     def _connect(self):
@@ -32,6 +32,25 @@ class MQTTHandler:
         except Exception as e:
             print(f"MQTT Initial Connection Error: {e}")
             self.connected = False
+
+    def _connect_blocking(self):
+        try:
+            self.client.connect(self.broker, self.port, keepalive=60)
+        except Exception as e:
+            print(f"MQTT Initial Connection Error: {e}")
+            self.connected = False
+            return
+
+        self.client.loop_start()
+
+        timeout = 10
+        start_time = time.time()
+        while not self.connected:
+            if time.time() - start_time > timeout:
+                raise TimeoutError("MQTT connection timeout after 10 seconds.")
+            time.sleep(0.1)
+
+        self.client.loop_stop()
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:

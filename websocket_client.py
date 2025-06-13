@@ -45,7 +45,7 @@ class WebSocketClient:
         while self.should_reconnect:
             with self.lock:
                 if self.ws is not None:
-                    continue  # already connected
+                    continue
 
             for url in self.urls:
                 with self.lock:
@@ -57,4 +57,4 @@ class WebSocketClient:
                     except Exception as e:
                         print(f"❌ Reconnect attempt to {url} failed: {e}")
                         self.ws = None
-                time.sleep(2)  # Delay between reconnection attempts
+                time.sleep(2)

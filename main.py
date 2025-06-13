@@ -27,33 +27,35 @@ if __name__ == "__main__":
     )
 
     ws_client = WebSocketClient()
-
-
-    tracker = HandTracker(source=0)
+    
+    tracker = HandTracker(source=4)
     video_streamer = VideoStreamer(host="0.0.0.0", port=5000)
     video_streamer.start()
 
     mqtt_handler.subscribe("Command/HandTracking")
 
-    while True:
-        frame, hand_positions = tracker.get_frame()
-        if frame is None:
-            break
+    try:
+        while True:
+            frame, hand_positions = tracker.get_frame()
+            if frame is None:
+                break
 
-        cv2.imshow("Hand Tracking", frame)
-        video_streamer.update_frame(frame)
+            cv2.imshow("Hand Tracking", frame)
+            video_streamer.update_frame(frame)
 
-        if hand_positions and tracker.has_position_changed(hand_positions):
-            data = hand_positions.to_json()
-            if ws_client.is_connected():
-                ws_client.send(data)
-            else:
-                print("📭 No WebSocket connection")
+            if hand_positions and tracker.has_position_changed(hand_positions):
+                data = hand_positions.to_json()
+                if ws_client.is_connected():
+                    ws_client.send(data)
+                else:
+                    print("📭 No WebSocket connection")
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
 
-    cv2.destroyAllWindows()
-    del tracker
+    except KeyboardInterrupt:
+        print("🛑 Stopping due to keyboard interrupt...")
 
-
+    finally:
+        cv2.destroyAllWindows()
+        del tracker
